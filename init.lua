@@ -122,6 +122,26 @@ if vim.env.SSH_CONNECTION then
   }
 end
 
+-- Auto-reload files when changed externally
+vim.o.autoread = true
+
+vim.api.nvim_create_autocmd({ 'FocusGained', 'BufEnter', 'CursorHold', 'CursorHoldI' }, {
+  pattern = '*',
+  callback = function()
+    if vim.fn.mode() ~= 'c' then
+      vim.cmd 'checktime'
+    end
+  end,
+})
+
+-- Notification after file change
+vim.api.nvim_create_autocmd('FileChangedShellPost', {
+  pattern = '*',
+  callback = function()
+    vim.notify('File changed on disk. Buffer reloaded.', vim.log.levels.WARN)
+  end,
+})
+
 -- Don't show the mode, since it's already in the status line
 vim.o.showmode = false
 
