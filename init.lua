@@ -701,6 +701,7 @@ require('lazy').setup({
       --        For example, to see the options for `lua_ls`, you could go to: https://luals.github.io/wiki/settings/
       local servers = {
         -- clangd = {},
+        bashls = {},
         -- gopls = {},
         gopls = {
           settings = {
@@ -759,6 +760,7 @@ require('lazy').setup({
         'stylua', -- Used to format Lua code
         'goimports', -- Go imports organizer
         'gofumpt', -- Go formatter
+        'shfmt', -- Shell/Bash formatter
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
 
@@ -812,6 +814,8 @@ require('lazy').setup({
       formatters_by_ft = {
         lua = { 'stylua' },
         go = { 'goimports', 'gofumpt' },
+        sh = { 'shfmt' },
+        bash = { 'shfmt' },
         -- Conform can also run multiple formatters sequentially
         -- python = { "isort", "black" },
         --
@@ -879,30 +883,30 @@ require('lazy').setup({
         -- <c-k>: Toggle signature help
         --
         -- See :h blink-cmp-config-keymap for defining your own keymap
-        preset = 'none',
+        preset = 'enter',
 
         -- Tab to accept completion
-        ['<Tab>'] = { 'accept', 'snippet_forward', 'fallback' },
-        ['<S-Tab>'] = { 'snippet_backward', 'fallback' },
+        -- ['<Tab>'] = { 'accept', 'snippet_forward', 'fallback' },
+        -- ['<S-Tab>'] = { 'snippet_backward', 'fallback' },
 
         -- ['<C-j>'] = { 'select_next', 'fallback' },
         -- ['<C-k>'] = { 'select_prev', 'fallback' },
-        ['j'] = { 'select_next', 'fallback' },
-        ['k'] = { 'select_prev', 'fallback' },
+        -- ['j'] = { 'select_next', 'fallback' },
+        -- ['k'] = { 'select_prev', 'fallback' },
 
         -- Ctrl+Space to trigger/show completion
-        ['<C-Space>'] = { 'show', 'show_documentation', 'hide_documentation' },
-
-        -- Escape or Ctrl+e to close
-        ['<C-e>'] = { 'hide', 'fallback' },
-
-        -- Scroll documentation
-        ['<C-u>'] = { 'scroll_documentation_up', 'fallback' },
-        ['<C-d>'] = { 'scroll_documentation_down', 'fallback' },
-
-        -- Arrow keys as backup
-        ['<Up>'] = { 'select_prev', 'fallback' },
-        ['<Down>'] = { 'select_next', 'fallback' },
+        -- ['<C-Space>'] = { 'show', 'show_documentation', 'hide_documentation' },
+        --
+        -- -- Escape or Ctrl+e to close
+        -- ['<C-e>'] = { 'hide', 'fallback' },
+        --
+        -- -- Scroll documentation
+        -- ['<C-u>'] = { 'scroll_documentation_up', 'fallback' },
+        -- ['<C-d>'] = { 'scroll_documentation_down', 'fallback' },
+        --
+        -- -- Arrow keys as backup
+        -- ['<Up>'] = { 'select_prev', 'fallback' },
+        -- ['<Down>'] = { 'select_next', 'fallback' },
 
         -- For more advanced Luasnip keymaps (e.g. selecting choice nodes, expansion) see:
         --    https://github.com/L3MON4D3/LuaSnip?tab=readme-ov-file#keymaps
