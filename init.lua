@@ -187,6 +187,42 @@ vim.o.splitbelow = true
 vim.o.list = true
 vim.opt.listchars = { tab = '» ', trail = '·', nbsp = '␣' }
 
+vim.cmd [[
+  hi clear
+  syntax reset
+]]
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = { 'sh', 'bash' },
+  callback = function()
+    vim.opt_local.tabstop = 2
+    vim.opt_local.shiftwidth = 2
+    vim.opt_local.softtabstop = 2
+    vim.opt_local.expandtab = true
+  end,
+})
+
+vim.api.nvim_create_autocmd('FileType', {
+  pattern = 'go',
+  callback = function()
+    vim.opt_local.tabstop = 4
+    vim.opt_local.shiftwidth = 4
+    vim.opt_local.softtabstop = 4
+    vim.opt_local.expandtab = false
+  end,
+})
+
+vim.opt.tabstop = 4
+vim.opt.shiftwidth = 4
+vim.opt.softtabstop = 4
+vim.opt.expandtab = false
+
+-- Find and replace in current buffer
+vim.keymap.set('n', '<leader>fr', ':%s/', { desc = '[F]ind and [R]eplace' })
+
+-- Find and replace word under cursor
+vim.keymap.set('n', '<leader>fw', ':%s/<C-r><C-w>/', { desc = '[F]ind and replace [W]ord under cursor' })
+
 -- Preview substitutions live, as you type!
 vim.o.inccommand = 'split'
 
@@ -687,6 +723,11 @@ require('lazy').setup({
               vim.lsp.inlay_hint.enable(not vim.lsp.inlay_hint.is_enabled { bufnr = event.buf })
             end, '[T]oggle Inlay [H]ints')
           end
+
+          local client = vim.lsp.get_client_by_id(event.data.client_id)
+          if client and client.server_capabilities.semanticTokensProvider then
+            vim.lsp.semantic_tokens.start(event.buf, client.id)
+          end
         end,
       })
 
@@ -746,7 +787,7 @@ require('lazy').setup({
                 shadow = true,
               },
               staticcheck = true,
-              gofumpt = true,
+              semanticTokens = true,
             },
           },
         },
@@ -794,7 +835,6 @@ require('lazy').setup({
       vim.list_extend(ensure_installed, {
         'stylua', -- Used to format Lua code
         'goimports', -- Go imports organizer
-        'gofumpt', -- Go formatter
         'shfmt', -- Shell/Bash formatter
       })
       require('mason-tool-installer').setup { ensure_installed = ensure_installed }
@@ -813,6 +853,29 @@ require('lazy').setup({
           end,
         },
       }
+    end,
+  },
+
+  {
+    'fatih/vim-go',
+    ft = 'go',
+    build = ':GoUpdateBinaries',
+    config = function()
+      -- Disable vim-go's LSP (we use gopls already)
+      vim.g.go_gopls_enabled = 0
+      vim.g.go_code_completion_enabled = 0
+
+      -- Enable better syntax highlighting
+      vim.g.go_highlight_types = 1
+      vim.g.go_highlight_fields = 1
+      vim.g.go_highlight_functions = 1
+      vim.g.go_highlight_function_calls = 1
+      vim.g.go_highlight_operators = 1
+      vim.g.go_highlight_extra_types = 1
+      vim.g.go_highlight_build_constraints = 1
+      vim.g.go_highlight_generate_tags = 1
+      vim.g.go_highlight_variable_declarations = 1
+      vim.g.go_highlight_variable_assignments = 1
     end,
   },
 
@@ -848,7 +911,7 @@ require('lazy').setup({
       end,
       formatters_by_ft = {
         lua = { 'stylua' },
-        go = { 'goimports', 'gofumpt' },
+        go = { 'goimports' },
         sh = { 'shfmt' },
         bash = { 'shfmt' },
         -- Conform can also run multiple formatters sequentially
@@ -987,6 +1050,17 @@ require('lazy').setup({
     -- change the command in the config to whatever the name of that colorscheme is.
     --
     -- If you want to see what colorschemes are already installed, you can use `:Telescope colorscheme`.
+    {
+      'navarasu/onedark.nvim',
+      priority = 1000,
+      config = function()
+        require('onedark').setup {
+          style = 'dark',
+        }
+        vim.cmd.colorscheme 'onedark'
+      end,
+    },
+
     'folke/tokyonight.nvim',
     priority = 1000, -- Make sure to load this before all the other start plugins.
     config = function()
@@ -1000,9 +1074,14 @@ require('lazy').setup({
       -- Load the colorscheme here.
       -- Like many other themes, this one has different styles, and you could load
       -- any other, such as 'tokyonight-storm', 'tokyonight-moon', or 'tokyonight-day'.
-      vim.cmd.colorscheme 'tokyonight-night'
+      -- vim.cmd.colorscheme 'tokyonight-night'
     end,
   },
+
+  { 'gruvbox-community/gruvbox', priority = 1000 },
+  { 'catppuccin/nvim', name = 'catppuccin', priority = 1000 },
+  { 'shaunsingh/nord.nvim', priority = 1000 },
+  { 'rebelot/kanagawa.nvim', priority = 1000 },
 
   -- Highlight todo, notes, etc in comments
   { 'folke/todo-comments.nvim', event = 'VimEnter', dependencies = { 'nvim-lua/plenary.nvim' }, opts = { signs = false } },
@@ -1050,7 +1129,7 @@ require('lazy').setup({
     main = 'nvim-treesitter', -- Sets main module to use for opts
     -- [[ Configure Treesitter ]] See `:help nvim-treesitter`
     opts = {
-      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc' },
+      ensure_installed = { 'bash', 'c', 'diff', 'html', 'lua', 'luadoc', 'markdown', 'markdown_inline', 'query', 'vim', 'vimdoc', 'go' },
       -- Autoinstall languages that are not installed
       auto_install = true,
       highlight = {
@@ -1080,7 +1159,7 @@ require('lazy').setup({
   --  Uncomment any of the lines below to enable them (you will need to restart nvim).
   --
   -- require 'kickstart.plugins.debug',
-  -- require 'kickstart.plugins.indent_line',
+  require 'kickstart.plugins.indent_line',
   -- require 'kickstart.plugins.lint',
   -- require 'kickstart.plugins.autopairs',
   -- require 'kickstart.plugins.neo-tree',
