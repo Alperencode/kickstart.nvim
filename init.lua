@@ -356,7 +356,7 @@ require('lazy').setup({
 
     {
       'nvim-tree/nvim-tree.lua',
-      dependencies = { 'nvim-tree/nvim-web-devicons' },
+      dependencies = { 'nvim-tree/mini.icons' },
       config = function()
         require('nvim-tree').setup()
         vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = '[E]xplorer toggle' })
@@ -853,6 +853,59 @@ require('lazy').setup({
           end,
         },
       }
+    end,
+  },
+
+  {
+    'akinsho/bufferline.nvim',
+    version = '*',
+    dependencies = 'echasnovski/mini.icons',
+    opts = {
+      options = {
+        mode = 'buffers',
+        numbers = 'none',
+        close_command = 'bdelete! %d',
+        right_mouse_command = 'bdelete! %d',
+        left_mouse_command = 'buffer %d',
+        middle_mouse_command = nil,
+        indicator = {
+          style = 'underline',
+        },
+        buffer_close_icon = '󰅖',
+        modified_icon = '●',
+        close_icon = '',
+        left_trunc_marker = '',
+        right_trunc_marker = '',
+        diagnostics = 'nvim_lsp',
+        separator_style = 'thin',
+        always_show_bufferline = true,
+        show_buffer_close_icons = true,
+        show_close_icon = false,
+        color_icons = true,
+      },
+    },
+    config = function(_, opts)
+      require('bufferline').setup(opts)
+
+      -- Keymaps for navigation
+      vim.keymap.set('n', '<Tab>', '<cmd>BufferLineCycleNext<CR>', { desc = 'Next buffer' })
+      vim.keymap.set('n', '<S-Tab>', '<cmd>BufferLineCyclePrev<CR>', { desc = 'Previous buffer' })
+      vim.keymap.set('n', '<leader>x', '<cmd>bdelete<CR>', { desc = 'Close buffer' })
+    end,
+  },
+
+  {
+    'echasnovski/mini.icons',
+    opts = {},
+    lazy = true,
+    specs = {
+      { 'nvim-tree/nvim-web-devicons', enabled = false, optional = true },
+    },
+    init = function()
+      package.preload['nvim-web-devicons'] = function()
+        require('mini.icons').mock_nvim_web_devicons()
+        return package.loaded['nvim-web-devicons']
+      end
     end,
   },
 
