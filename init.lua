@@ -914,8 +914,8 @@ require('lazy').setup({
     ft = 'go',
     build = ':GoUpdateBinaries',
     config = function()
-      -- Disable vim-go's LSP (we use gopls already)
-      vim.g.go_gopls_enabled = 0
+      vim.g.go_gopls_enabled = 1
+      vim.g.go_def_mode = 'gopls'
       vim.g.go_code_completion_enabled = 0
 
       -- Enable better syntax highlighting
