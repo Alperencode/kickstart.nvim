@@ -202,6 +202,19 @@ vim.api.nvim_create_autocmd('FileType', {
   end,
 })
 
+-- Mouse option
+vim.opt.mouse = 'a'
+
+-- Enable persistent undo
+vim.opt.undofile = true
+
+vim.opt.undodir = vim.fn.stdpath 'data' .. '/undo'
+
+vim.fn.mkdir(vim.fn.stdpath 'data' .. '/undo', 'p')
+
+vim.opt.undolevels = 10000
+vim.opt.undoreload = 10000
+
 vim.api.nvim_create_autocmd('FileType', {
   pattern = 'go',
   callback = function()
@@ -222,6 +235,35 @@ vim.keymap.set('n', '<leader>fr', ':%s/', { desc = '[F]ind and [R]eplace' })
 
 -- Find and replace word under cursor
 vim.keymap.set('n', '<leader>fw', ':%s/<C-r><C-w>/', { desc = '[F]ind and replace [W]ord under cursor' })
+
+-- Fancy hover function
+local fancy_hover = function()
+  local opts = {
+    border = {
+      { '╭', 'FloatBorder' },
+      { '─', 'FloatBorder' },
+      { '╮', 'FloatBorder' },
+      { '│', 'FloatBorder' },
+      { '╯', 'FloatBorder' },
+      { '─', 'FloatBorder' },
+      { '╰', 'FloatBorder' },
+      { '│', 'FloatBorder' },
+    },
+    max_width = 100,
+    max_height = 30,
+    focusable = true,
+    focus_id = 'lsp_hover',
+    close_events = { 'BufLeave', 'InsertEnter' },
+    style = 'minimal',
+    relative = 'cursor',
+    winhighlight = 'Normal:NormalFloat,FloatBorder:FloatBorder',
+  }
+  vim.lsp.buf.hover(opts)
+end
+
+-- Keymaps for both K and gh
+vim.keymap.set('n', 'K', fancy_hover, { desc = 'LSP Hover Documentation' })
+vim.keymap.set('n', 'gh', fancy_hover, { desc = 'LSP Hover Documentation' })
 
 -- Preview substitutions live, as you type!
 vim.o.inccommand = 'split'
@@ -929,6 +971,267 @@ require('lazy').setup({
       vim.g.go_highlight_generate_tags = 1
       vim.g.go_highlight_variable_declarations = 1
       vim.g.go_highlight_variable_assignments = 1
+    end,
+  },
+
+  {
+    'mfussenegger/nvim-dap',
+    dependencies = {
+      -- UI plugins for better debugging experience
+      'rcarriga/nvim-dap-ui',
+      'nvim-neotest/nvim-nio',
+      'theHamsta/nvim-dap-virtual-text',
+
+      'microsoft/vscode-js-debug',
+      'leoluz/nvim-dap-go',
+    },
+    config = function()
+      local dap = require 'dap'
+      local dapui = require 'dapui'
+
+      -- Setup dap-go (handles delve installation automatically)
+      require('dap-go').setup()
+      require('dap.ext.vscode').load_launchjs(nil, { go = { 'go' } })
+
+      -- Setup UI
+      dapui.setup()
+
+      -- Show variable values inline while debugging
+      require('nvim-dap-virtual-text').setup()
+
+      -- Auto-open/close UI when debugging starts/ends
+      dap.listeners.after.event_initialized['dapui_config'] = function()
+        dapui.open()
+      end
+      dap.listeners.before.event_terminated['dapui_config'] = function()
+        dapui.close()
+      end
+      dap.listeners.before.event_exited['dapui_config'] = function()
+        dapui.close()
+      end
+
+      -- Keymaps (Mac-friendly, no F-keys)
+      vim.keymap.set('n', '<leader>dc', dap.continue, { desc = 'Debug: Start/Continue' })
+      vim.keymap.set('n', '<leader>dn', dap.step_over, { desc = 'Debug: Step Over (Next)' })
+      vim.keymap.set('n', '<leader>di', dap.step_into, { desc = 'Debug: Step Into' })
+      vim.keymap.set('n', '<leader>do', dap.step_out, { desc = 'Debug: Step Out' })
+      vim.keymap.set('n', '<leader>b', dap.toggle_breakpoint, { desc = 'Debug: Toggle Breakpoint' })
+      vim.keymap.set('n', '<leader>B', function()
+        dap.set_breakpoint(vim.fn.input 'Breakpoint condition: ')
+      end, { desc = 'Debug: Conditional Breakpoint' })
+
+      -- Additional useful keymaps
+      vim.keymap.set('n', '<leader>dr', dap.repl.open, { desc = 'Debug: Open REPL' })
+      vim.keymap.set('n', '<leader>dl', dap.run_last, { desc = 'Debug: Run Last' })
+      vim.keymap.set('n', '<leader>dt', dapui.toggle, { desc = 'Debug: Toggle UI' })
+      vim.keymap.set('n', '<leader>dq', dap.terminate, { desc = 'Debug: Quit/Terminate' })
+
+      -- Select configuration
+      vim.keymap.set('n', '<leader>ds', function()
+        if vim.tbl_isempty(dap.configurations.go or {}) then
+          print 'No debug configurations found'
+          return
+        end
+
+        if #dap.configurations.go > 1 then
+          vim.ui.select(
+            vim.tbl_map(function(config)
+              return config.name
+            end, dap.configurations.go),
+            { prompt = 'Select debug configuration:' },
+            function(_, idx)
+              if idx then
+                dap.run(dap.configurations.go[idx])
+              end
+            end
+          )
+        else
+          dap.continue()
+        end
+      end, { desc = 'Debug: Select Configuration' })
+
+      -- Define custom breakpoint signs/icons
+      vim.fn.sign_define('DapBreakpoint', {
+        text = '🔴',
+        texthl = 'DapBreakpoint',
+        linehl = '',
+        numhl = 'DapBreakpoint',
+      })
+
+      vim.fn.sign_define('DapBreakpointCondition', {
+        text = '🟡',
+        texthl = 'DapBreakpoint',
+        linehl = '',
+        numhl = 'DapBreakpoint',
+      })
+
+      vim.fn.sign_define('DapBreakpointRejected', {
+        text = '⭕',
+        texthl = 'DapBreakpoint',
+        linehl = '',
+        numhl = 'DapBreakpoint',
+      })
+
+      vim.fn.sign_define('DapStopped', {
+        text = '▶️',
+        texthl = 'DapStopped',
+        linehl = 'DapStoppedLine',
+        numhl = 'DapStopped',
+      })
+
+      vim.fn.sign_define('DapLogPoint', {
+        text = '📝',
+        texthl = 'DapLogPoint',
+        linehl = '',
+        numhl = 'DapLogPoint',
+      })
+
+      -- Custom highlight colors for breakpoints
+      vim.api.nvim_set_hl(0, 'DapBreakpoint', { fg = '#e51400' }) -- Red
+      vim.api.nvim_set_hl(0, 'DapStopped', { fg = '#98c379' }) -- Green
+      vim.api.nvim_set_hl(0, 'DapStoppedLine', { bg = '#31353f' }) -- Highlight current line
+      vim.api.nvim_set_hl(0, 'DapLogPoint', { fg = '#61afef' }) -- Blue
+    end,
+  },
+
+  {
+    'folke/trouble.nvim',
+    dependencies = { 'echasnovski/mini.icons' },
+    opts = {},
+    keys = {
+      { '<leader>xx', '<cmd>Trouble diagnostics toggle<cr>', desc = 'Diagnostics (Trouble)' },
+      { '<leader>xd', '<cmd>Trouble diagnostics toggle filter.buf=0<cr>', desc = 'Buffer Diagnostics' },
+      { '<leader>xl', '<cmd>Trouble loclist toggle<cr>', desc = 'Location List (Trouble)' },
+      { '<leader>xq', '<cmd>Trouble qflist toggle<cr>', desc = 'Quickfix List (Trouble)' },
+    },
+  },
+
+  {
+    'nvim-neo-tree/neo-tree.nvim',
+    branch = 'v3.x',
+    dependencies = {
+      'nvim-lua/plenary.nvim',
+      'echasnovski/mini.icons',
+      'MunifTanjim/nui.nvim',
+    },
+    keys = {
+      { '<leader>e', '<cmd>Neotree toggle<cr>', desc = 'Toggle Neo-tree' },
+    },
+  },
+
+  {
+    'stevearc/oil.nvim',
+    dependencies = { 'echasnovski/mini.icons' },
+    opts = {},
+    keys = {
+      { '-', '<cmd>Oil<cr>', desc = 'Open parent directory' },
+    },
+  },
+
+  {
+    'smjonas/inc-rename.nvim',
+    config = function()
+      require('inc_rename').setup()
+      vim.keymap.set('n', '<leader>rn', ':IncRename ', { desc = 'Rename (with preview)' })
+      vim.keymap.set('n', '<F2>', ':IncRename ', { desc = 'Rename F2' })
+    end,
+  },
+
+  {
+    'windwp/nvim-autopairs',
+    event = 'InsertEnter',
+    opts = {
+      check_ts = true,
+      ts_config = {
+        lua = { 'string' },
+        javascript = { 'template_string' },
+      },
+    },
+  },
+
+  {
+    'folke/flash.nvim',
+    event = 'VeryLazy',
+    opts = {},
+    keys = {
+      {
+        's',
+        mode = { 'n', 'x', 'o' },
+        function()
+          require('flash').jump()
+        end,
+        desc = 'Flash',
+      },
+      {
+        'S',
+        mode = { 'n', 'x', 'o' },
+        function()
+          require('flash').treesitter()
+        end,
+        desc = 'Flash Treesitter',
+      },
+    },
+  },
+
+  {
+    'mbbill/undotree',
+    config = function()
+      vim.keymap.set('n', '<leader>u', vim.cmd.UndotreeToggle, { desc = 'Toggle Undo Tree' })
+
+      -- Configure undotree
+      vim.g.undotree_WindowLayout = 2
+      vim.g.undotree_ShortIndicators = 1
+      vim.g.undotree_SetFocusWhenToggle = 1
+    end,
+  },
+
+  {
+    'folke/noice.nvim',
+    event = 'VeryLazy',
+    dependencies = {
+      'MunifTanjim/nui.nvim',
+      'rcarriga/nvim-notify',
+    },
+    opts = {
+      lsp = {
+        override = {
+          ['vim.lsp.util.convert_input_to_markdown_lines'] = true,
+          ['vim.lsp.util.stylize_markdown'] = true,
+          ['cmp.entry.get_documentation'] = true,
+        },
+        hover = {
+          enabled = true,
+        },
+        signature = {
+          enabled = true,
+        },
+      },
+      presets = {
+        bottom_search = true,
+        command_palette = true,
+        long_message_to_split = true,
+        lsp_doc_border = true,
+      },
+    },
+  },
+
+  {
+    'soulis-1256/eagle.nvim',
+    config = function()
+      require('eagle').setup {
+        -- Delay before showing hover (in milliseconds)
+        delay = 200,
+        -- Border style for hover window
+        border = 'rounded', -- 'none', 'single', 'double', 'rounded', 'solid', 'shadow'
+        -- Maximum width of hover window
+        max_width = 100,
+        -- Maximum height of hover window
+        max_height = 30,
+        -- Enable/disable mouse hover
+        enable = true,
+        -- Close hover window on cursor move
+        close_on_cursor_move = true,
+      }
     end,
   },
 
