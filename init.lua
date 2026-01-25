@@ -395,16 +395,6 @@ require('lazy').setup({
   --
   -- See `:help gitsigns` to understand what the configuration keys do
   { -- Adds git related signs to the gutter, as well as utilities for managing changes
-
-    {
-      'nvim-tree/nvim-tree.lua',
-      dependencies = { 'nvim-tree/mini.icons' },
-      config = function()
-        require('nvim-tree').setup()
-        vim.keymap.set('n', '<leader>e', '<cmd>NvimTreeToggle<CR>', { desc = '[E]xplorer toggle' })
-      end,
-    },
-
     {
       'akinsho/toggleterm.nvim',
       version = '*',
@@ -975,6 +965,23 @@ require('lazy').setup({
   },
 
   {
+    'MagicDuck/grug-far.nvim',
+    keys = {
+      { '<leader>S', '<cmd>GrugFar<CR>', desc = 'Search and Replace' },
+      {
+        '<leader>sw',
+        function()
+          require('grug-far').grug_far { prefills = { search = vim.fn.expand '<cword>' } }
+        end,
+        desc = 'Search current word',
+      },
+    },
+    config = function()
+      require('grug-far').setup {}
+    end,
+  },
+
+  {
     'ojroques/nvim-osc52',
     config = function()
       require('osc52').setup {
@@ -1012,7 +1019,7 @@ require('lazy').setup({
       dapui.setup()
 
       -- Show variable values inline while debugging
-      require('nvim-dap-virtual-text').setup()
+      require('nvim-dap-virtual-text').setup {}
 
       -- Auto-open/close UI when debugging starts/ends
       dap.listeners.after.event_initialized['dapui_config'] = function()
@@ -1131,7 +1138,35 @@ require('lazy').setup({
     },
     keys = {
       { '<leader>e', '<cmd>Neotree toggle<cr>', desc = 'Toggle Neo-tree' },
+      { '<leader>o', '<cmd>Neotree focus<cr>', desc = 'Focus Neo-tree' },
     },
+    config = function()
+      require('neo-tree').setup {
+        close_if_last_window = true,
+
+        window = {
+          width = 35,
+          mappings = {
+            ['l'] = 'open',
+            ['h'] = 'close_node',
+          },
+        },
+
+        filesystem = {
+          follow_current_file = {
+            enabled = true,
+          },
+          filtered_items = {
+            hide_dotfiles = false,
+            hide_gitignored = false,
+            hide_by_name = {
+              'node_modules',
+            },
+          },
+          use_libuv_file_watcher = true,
+        },
+      }
+    end,
   },
 
   {
@@ -1144,11 +1179,17 @@ require('lazy').setup({
   },
 
   {
-    'smjonas/inc-rename.nvim',
+    'nvimdev/lspsaga.nvim',
+    event = 'LspAttach',
     config = function()
-      require('inc_rename').setup()
-      vim.keymap.set('n', '<leader>rn', ':IncRename ', { desc = 'Rename (with preview)' })
-      vim.keymap.set('n', '<F2>', ':IncRename ', { desc = 'Rename F2' })
+      require('lspsaga').setup {
+        rename = {
+          in_select = false,
+          auto_save = false,
+        },
+      }
+      vim.keymap.set('n', '<leader>rn', '<cmd>Lspsaga rename<CR>', { desc = 'Rename symbol' })
+      vim.keymap.set('n', '<F2>', '<cmd>Lspsaga rename<CR>', { desc = 'Rename F2' })
     end,
   },
 
@@ -1160,30 +1201,6 @@ require('lazy').setup({
       ts_config = {
         lua = { 'string' },
         javascript = { 'template_string' },
-      },
-    },
-  },
-
-  {
-    'folke/flash.nvim',
-    event = 'VeryLazy',
-    opts = {},
-    keys = {
-      {
-        's',
-        mode = { 'n', 'x', 'o' },
-        function()
-          require('flash').jump()
-        end,
-        desc = 'Flash',
-      },
-      {
-        'S',
-        mode = { 'n', 'x', 'o' },
-        function()
-          require('flash').treesitter()
-        end,
-        desc = 'Flash Treesitter',
       },
     },
   },
